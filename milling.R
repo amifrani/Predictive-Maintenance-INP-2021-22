@@ -58,17 +58,7 @@ ggarrange(case_16)
 # Let's "model" case 10
 
 # Let's perform a statistical regression on flank wear, VB.
-# (Traini et al., 2019) begin by designing certain explanatory temporal features for the three kinds of sensor signals (vibrations, AE, motor currents)
-# Some of those features are:
-## RMS - 
-## Variance - 
-## Maximum -
-## Skewness - 
-## Kurtosis - 
-## Peak-to-peak - 
-## Spectral skewness - 
-## Spectral kurtosis -
-## Wavelet energy - 
+
 
 # Model 1 (LR): VB_i = theta0 + theta1*x_i1 + ... + thetap*x_ip for all observations i. p is the number of independent explanatory variables. 
 # LR_model <- lm(formula = VB ~ DOC + feed + material + RMS + variance + skewness + kurtosis + p2p + spec_skewness + spec_kurtosis + wavelet_energy, data = )
@@ -375,12 +365,21 @@ ggarrange(plot_exp_2, plot_exp_10)
 # ggarrange(plot_exp_2, plot_exp_10, plot_exp_10_non_scaled)
 
 
-# Let's fit a linear model to the entire set of experiments.
 # Row 95 (first run of experiment 12) is singular in that its sensor data wasn't downsized to 9000 time steps as in the rest of the experiments.
 experiments <- milling_data[-95, ]
 experiments <- as.data.frame(experiments)
-#experiments <- na.omit(experiments)
 
+# We begin by designing and deriving new temporal features from the sensor data.
+# For the three kinds of signals (acoustic emission, vibration and motor current), (Traini et al., 2019) and (Cai et al., 2020) rely on the following statistical properties: 
+  ## RMS - 
+  ## Variance - 
+  ## Maximum -
+  ## Skewness - 
+  ## Kurtosis - 
+  ## Peak-to-peak - 
+  ## Spectral skewness - 
+  ## Spectral kurtosis -
+  ## Wavelet energy -
 
 RMS_smcAC <- array(data=rep(0:0, times=nrow(experiments)), dim=nrow(experiments))
 RMS_smcDC <- array(data=rep(0:0, times=nrow(experiments)), dim=nrow(experiments))
@@ -498,41 +497,38 @@ for (i in 1:nrow(experiments)) {
   min_vib_spindle[[i]] <- min(experiments[i, 46088:55087])
   min_AE_table[[i]] <- min(experiments[i, 61448:70447])
   min_AE_spindle[[i]] <- min(experiments[i, 76808:85807])
-  }
 }
 
+# Now that the features have been computed for each of the signals, let's append them to the data set
 data_with_temporal_features <- cbind(experiments[, 1:7], RMS_smcAC, RMS_smcDC, RMS_vib_table, RMS_vib_spindle, RMS_AE_table, RMS_AE_spindle, var_smcAC, var_smcDC, var_vib_table, var_vib_spindle, var_AE_table, var_AE_spindle, max_smcAC, max_smcDC, max_vib_table, max_vib_spindle, max_AE_table, max_AE_spindle, skewness_smcAC, skewness_smcDC, skewness_vib_table, skewness_vib_spindle, skewness_AE_table, skewness_AE_spindle, kurtosis_smcAC, kurtosis_smcDC, kurtosis_vib_table, kurtosis_vib_spindle, kurtosis_AE_table, kurtosis_AE_spindle, p2p_smcAC, p2p_smcDC, p2p_vib_table, p2p_vib_spindle, p2p_AE_table, p2p_AE_spindle, sum_smcAC, sum_smcDC, sum_vib_table, sum_vib_spindle, sum_AE_table, sum_AE_spindle, min_smcAC, min_smcDC, min_vib_table, min_vib_spindle, min_AE_table, min_AE_spindle, row.names = NULL)
+# Runs that do not have a corresponding VB value are discarded from the VB modelling phase.
 data_with_temporal_features <- na.omit(data_with_temporal_features)
 
 # What correlations are there between the 37 features?
 ggcorrplot::ggcorrplot(cor(data_with_temporal_features), hc.order = TRUE)
+## Temporal features are often perfectly correlated.
+## Now, what variables have the greatest influence on VB?
+cor(data_with_temporal_features[-3], data_with_temporal_features$VB)
+## x, y, z
 
-# Let's partition the observations into those intended to train the model and those intended to assess its performance.
-# training data: 70% - test data: 30%
-#sample_size <- floor(0.7 * nrow(data_with_temporal_features))
-#set.seed(123) # this makes the partition reproducible
-#train_indices <- sample(seq_len(nrow(data_with_temporal_features)), size = sample_size)
-
-# Dummy coding for DOC, feed and material
+# DOC, feed and material are categorical variables. Let's code them in 0s and 1s.
 data_with_TF_coded <- data_with_temporal_features
 data_with_TF_coded$DOC <- ifelse(data_with_TF_coded$DOC == 1.5, 1, 0)
 data_with_TF_coded$feed <- ifelse(data_with_TF_coded$feed == 0.5, 1, 0)
 data_with_TF_coded$material <- ifelse(data_with_TF_coded$material == 2, 1, 0)
 
+# min-max scaling of the data (except case)
 data_scaled <- data_with_TF_coded
-
 for (i in 2:ncol(data_scaled)) {
   data_scaled[, i] <- c(as.column(normalize(data_scaled[, i])))
-
 }
 
+# Let's partition the observations into those intended to train the models and those intended to assess their performance.
+## Cases 11, 12, 15 and 16 are test cases.
 test_scaled <- data_scaled[data_scaled$case == 12 | data_scaled$case == 15 | data_scaled$case == 11 | data_scaled$case == 16, ]
 train_scaled <- data_scaled[!(data_scaled$case == 12  | data_scaled$case == 15 | data_scaled$case == 11 | data_scaled$case == 16), ]
 
-# Model 1: with temporal features (RMS, max, var, skewness, kurtosis), process information and time
-#LR_1 <- lm(formula = VB ~ time + DOC + feed + material + RMS_smcAC + RMS_smcDC + RMS_vib_table + RMS_vib_spindle + RMS_AE_table + RMS_AE_spindle + var_smcAC + var_smcDC + var_vib_table + var_vib_spindle + var_AE_table + var_AE_spindle + max_smcAC + max_smcDC + max_vib_table + max_vib_spindle + max_AE_table + max_AE_spindle + skewness_smcAC + skewness_smcDC + skewness_vib_table + skewness_vib_spindle + skewness_AE_table + skewness_AE_spindle + kurtosis_smcAC + kurtosis_smcDC + kurtosis_vib_table + kurtosis_vib_spindle + kurtosis_AE_table + kurtosis_AE_spindle,
- #          data = train_scaled)
-#summary(LR_1)
+# Model 1: VB = b0 + b1*x + b2*y + b3*z + b4*d + epsilon
 LR_1 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
                      data = train_scaled)
 summary(LR_1)
@@ -543,7 +539,7 @@ plot(LR_1_results$actual, LR_1_results$predicted, col = "red",
      main = 'VB observées vs. VB prédites')
 abline(0, 1, lwd = 2)
 
-## Let's compute LR_1's RMSE, MAE and average accuracy in cases 11, 12, 15 and 16
+## Let's compute model 1's RMSE, MAE and average accuracy in cases 11, 12, 15 and 16
 RMSE_LR_1_exp_11 <- rmse(actual = test_scaled[test_scaled$case == 11, "VB"], predicted = LR_1_results[LR_1_results$case == 11, ]$predicted)
 RMSE_LR_1_exp_12 <- rmse(actual = test_scaled[test_scaled$case == 12, "VB"], predicted = LR_1_results[LR_1_results$case == 12, ]$predicted)
 RMSE_LR_1_exp_15 <- rmse(actual = test_scaled[test_scaled$case == 15, "VB"], predicted = LR_1_results[LR_1_results$case == 15, ]$predicted)
@@ -567,13 +563,10 @@ plot_exp_11 <- ggplot(data=test_scaled[test_scaled$case == 11,], mapping=aes(x=t
 plot_exp_16 <- ggplot(data=test_scaled[test_scaled$case == 16,], mapping=aes(x=time, y=VB)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 16, ], aes(x = time, y = predicted))
 ggarrange(plot_exp_11, plot_exp_12, plot_exp_15, plot_exp_16)
 
-## an additional check: LR_1's RMSE, MAE and average accuracy in the training set
+## an additional check: model 1's RMSE, MAE and average accuracy in the training set
 LR_1_results_train <- data.frame(time = train_scaled$time, case = train_scaled$case, actual = train_scaled$VB, predicted = predict(LR_1, train_scaled))
 RMSE_LR_1_train <- rmse(actual = train_scaled$VB, predicted = LR_1_results_train$predicted)
 
-
-#plot_exp_10 <- ggplot(data=training_data_exp2_10[training_data_exp2_10$case == 10,], mapping=aes(x=time, y=VB)) + geom_point(color = "blue") + geom_line(color = "red", data = predicted_df, aes(x = time, y = predicted_VB_model_1)) + geom_line(color = "orange", data = predicted_df, aes(x = time, y = predicted_VB_model_2)) + geom_line(color = "yellow", data = predicted_df, aes(x = time, y = predicted_VB_model_3)) + geom_line(color = "green", data = predicted_df, aes(x = time, y = predicted_VB_model_4)) + geom_line(color = "brown", data = predicted_df, aes(x = time, y = predicted_VB_model_5))  # + geom_line() #+ geom_hline(yintercept=VB_k, color = "blue"))
-ggarrange(plot_exp_15, plot_exp_12, plot_exp_11, plot_exp_16)
 # Model 2: with temporal features and process information
 LR_2 <- lm(formula = VB ~ DOC + feed + material + RMS_smcAC + RMS_smcDC + RMS_vib_table + RMS_vib_spindle + RMS_AE_table + RMS_AE_spindle + var_smcAC + var_smcDC + var_vib_table + var_vib_spindle + var_AE_table + var_AE_spindle + max_smcAC + max_smcDC + max_vib_table + max_vib_spindle + max_AE_table + max_AE_spindle + skewness_smcAC + skewness_smcDC + skewness_vib_table + skewness_vib_spindle + skewness_AE_table + skewness_AE_spindle + kurtosis_smcAC + kurtosis_smcDC + kurtosis_vib_table + kurtosis_vib_spindle + kurtosis_AE_table + kurtosis_AE_spindle,
            data = train_scaled)
@@ -600,7 +593,6 @@ LR_7 <- lm(formula = VB ~ time,
 summary(LR_7)
 
 ####################################################### NEURAL NETWORKS FOR VB REGRESSION #########################################
-library(neuralnet)
 # Feedforward, fully connected NN (32 x 8 hidden units) for VB regression
 NN_1 <- neuralnet(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
                   data = train_scaled, hidden = c(32, 8), threshold = 0.01, linear.output = TRUE, act.fct = "tanh")
@@ -620,6 +612,7 @@ test.r <- (test_scaled$VB) * (max(data_with_temporal_features$VB) - min(data_wit
 MSE.nn_1 <- sum((test.r - pr.nn_)^2) / nrow(test_scaled)
 RMSE_NN_1_test <- sqrt(MSE.nn_1)
 #MSE.nn <- sum((test_scaled[,"VB"] - nn.results$net.result)^2) / nrow(test_scaled)
+
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test_scaled$VB, nn.results$net.result, col = "red", 
      main = 'VB observées vs. VB prédites')
@@ -638,11 +631,11 @@ print(results)
 pr.nn_2 <- nn.results_2$net.result * (max(data_with_temporal_features$VB) - min(data_with_temporal_features$VB)) + min(data_with_temporal_features$VB)
 MSE.nn_2 <- sum((test.r - pr.nn_2)^2) / nrow(test_scaled)
 RMSE_NN_2_test <- sqrt(MSE.nn_2)
+
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test_scaled$VB, nn.results_2$net.result, col = "red", 
      main = 'VB observées vs. VB prédites par NN_2')
 abline(0, 1, lwd = 2)
-
 
 # A third feedforward, fully connected NN (2 hidden units) for VB regression
 NN_3 <- neuralnet(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
@@ -703,7 +696,7 @@ RMSE_NN_2_exp_16 <- rmse(actual = results_with_time_and_case[results_with_time_a
 RMSE_NN_3_exp_16 <- rmse(actual = results_with_time_and_case[results_with_time_and_case$case == 16, ]$actual, predicted = results_with_time_and_case[results_with_time_and_case$case == 16, ]$prediction_NN3)
 
 # Let's plot smcAC sensor data for the first run of experiment 2
-smcAC_run_1 <- c(experiments_2_10[1, 8:9007])
+#smcAC_run_1 <- c(experiments_2_10[1, 8:9007])
 #smcAC_run_1_indices <- c(1:9000)
 #smcAC_run_1_points <- data.frame(smcAC_run_1_indices, smcAC_run_1)
-ggplot(data=smcAC_run_1)
+#ggplot(data=smcAC_run_1)
