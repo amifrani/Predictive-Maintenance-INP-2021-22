@@ -15,6 +15,8 @@ library(carData)
 library(ModelMetrics)
 library(neuralnet)
 library(rnn)
+library(e1071)
+library(tsfeatures)
 # Loading NASA's "milling data set" 
 # milling_data <- read.csv("mill.csv")
 #milling_data <- read.table("mill.txt", sep=",")
@@ -32,8 +34,8 @@ for (i in 1:16)
 }
 # Case 1 is rather strange: flank wear drops from .5 mm to .44 mm between t = 44 mins and t = 48 mins
 
-VB_k <- 0.4
-# Let's take a look at experiment n° 10: DOC = 1.5mm, feed = 0.5mm, material = cast iron
+VB_k <- 0.65
+# Let's take a look at experiment nÂ° 10: DOC = 1.5mm, feed = 0.5mm, material = cast iron
 case_1 <- ggplot(data=cases_VB_and_time[cases_VB_and_time$case == 1, ], mapping=aes(x=time, y=VB)) + geom_point() + geom_line() #+ geom_hline(yintercept=VB_k, color = "blue")
 case_2 <- ggplot(data=cases_VB_and_time[cases_VB_and_time$case == 2, ], mapping=aes(x=time, y=VB)) + geom_point() + geom_line() #+ geom_hline(yintercept=VB_k, color = "blue")
 case_3 <- ggplot(data=cases_VB_and_time[cases_VB_and_time$case == 3, ], mapping=aes(x=time, y=VB)) + geom_point() + geom_line()
@@ -429,10 +431,22 @@ min_vib_table <- array(data=rep(0:0, times=nrow(experiments)), dim=nrow(experime
 min_vib_spindle <- array(data=rep(0:0, times=nrow(experiments)), dim=nrow(experiments))
 min_AE_table <- array(data=rep(0:0, times=nrow(experiments)), dim=nrow(experiments))
 min_AE_spindle <- array(data=rep(0:0, times=nrow(experiments)), dim=nrow(experiments))
+tsfeatures_smcAC <- array(data=rep(0:0, times=nrow(experiments)), dim=c(nrow(experiments), 16))
+colnames(tsfeatures_smcAC) <- c("frequency_smcAC", "nperiods_smcAC", "seasonal_period_smcAC", "trend_smcAC", "spike_smcAC", "linearity_smcAC", "curvature_smcAC", "e_acf1_smcAC", "e_acf10_smcAC", "entropy_smcAC", "x_acf1_smcAC", "x_acf10_smcAC", "diff1_acf1_smcAC", "diff1_acf10_smcAC", "diff2_acf1_smcAC", "diff2_acf10_smcAC")
+tsfeatures_smcDC <- array(data=rep(0:0, times=nrow(experiments)), dim=c(nrow(experiments), 16))
+colnames(tsfeatures_smcDC) <- c("frequency_smcDC", "nperiods_smcDC", "seasonal_period_smcDC", "trend_smcDC", "spike_smcDC", "linearity_smcDC", "curvature_smcDC", "e_acf1_smcDC", "e_acf10_smcDC", "entropy_smcDC", "x_acf1_smcDC", "x_acf10_smcDC", "diff1_acf1_smcDC", "diff1_acf10_smcDC", "diff2_acf1_smcDC", "diff2_acf10_smcDC")
+tsfeatures_vib_table <- array(data=rep(0:0, times=nrow(experiments)), dim=c(nrow(experiments), 16))
+colnames(tsfeatures_vib_table) <- c("frequency_vib_table", "nperiods_vib_table", "seasonal_period_vib_table", "trend_vib_table", "spike_vib_table", "linearity_vib_table", "curvature_vib_table", "e_acf1_vib_table", "e_acf10_vib_table", "entropy_vib_table", "x_acf1_vib_table", "x_acf10_vib_table", "diff1_acf1_vib_table", "diff1_acf10_vib_table", "diff2_acf1_vib_table", "diff2_acf10_vib_table")
+tsfeatures_vib_spindle <- array(data=rep(0:0, times=nrow(experiments)), dim=c(nrow(experiments), 16))
+colnames(tsfeatures_vib_spindle) <- c("frequency_vib_spindle", "nperiods_vib_spindle", "seasonal_period_vib_spindle", "trend_vib_spindle", "spike_vib_spindle", "linearity_vib_spindle", "curvature_vib_spindle", "e_acf1_vib_spindle", "e_acf10_vib_spindle", "entropy_vib_spindle", "x_acf1_vib_spindle", "x_acf10_vib_spindle", "diff1_acf1_vib_spindle", "diff1_acf10_vib_spindle", "diff2_acf1_vib_spindle", "diff2_acf10_vib_spindle")
+tsfeatures_AE_table <- array(data=rep(0:0, times=nrow(experiments)), dim=c(nrow(experiments), 16))
+colnames(tsfeatures_AE_table) <- c("frequency_AE_table", "nperiods_AE_table", "seasonal_period_AE_table", "trend_AE_table", "spike_AE_table", "linearity_AE_table", "curvature_AE_table", "e_acf1_AE_table", "e_acf10_AE_table", "entropy_AE_table", "x_acf1_AE_table", "x_acf10_AE_table", "diff1_acf1_AE_table", "diff1_acf10_AE_table", "diff2_acf1_AE_table", "diff2_acf10_AE_table")
+tsfeatures_AE_spindle <- array(data=rep(0:0, times=nrow(experiments)), dim=c(nrow(experiments), 16))
+colnames(tsfeatures_AE_spindle) <- c("frequency_AE_spindle", "nperiods_AE_spindle", "seasonal_period_AE_spindle", "trend_AE_spindle", "spike_AE_spindle", "linearity_AE_spindle", "curvature_AE_spindle", "e_acf1_AE_spindle", "e_acf10_AE_spindle", "entropy_AE_spindle", "x_acf1_AE_spindle", "x_acf10_AE_spindle", "diff1_acf1_AE_spindle", "diff1_acf10_AE_spindle", "diff2_acf1_AE_spindle", "diff2_acf10_AE_spindle")
 
 
 for (i in 1:nrow(experiments)) {
-  for (j in 8:9007) {
+  'for (j in 8:9007) {
     # RMS
     RMS_smcAC[[i]] <- RMS_smcAC[[i]] + experiments[i, j]**2
     RMS_smcDC[[i]] <- RMS_smcDC[[i]] + experiments[i, j+15360]**2
@@ -496,20 +510,40 @@ for (i in 1:nrow(experiments)) {
   min_vib_table[[i]] <- min(experiments[i, 30728:39727])
   min_vib_spindle[[i]] <- min(experiments[i, 46088:55087])
   min_AE_table[[i]] <- min(experiments[i, 61448:70447])
-  min_AE_spindle[[i]] <- min(experiments[i, 76808:85807])
+  min_AE_spindle[[i]] <- min(experiments[i, 76808:85807])'
+  # Features provided by tsfeatures
+  tsfeatures_smcAC[i, ] <- as.row(tsfeatures(ts(t(experiments[i, 8:9007]))))
+  tsfeatures_smcDC[i, ] <- as.row(tsfeatures(ts(t(experiments[i, 15368:24367]))))
+  tsfeatures_vib_table[i, ] <- as.row(tsfeatures(ts(t(experiments[i, 30728:39727]))))
+  tsfeatures_vib_spindle[i, ] <- as.row(tsfeatures(ts(t(experiments[i, 46088:55087]))))
+  tsfeatures_AE_table[i, ] <- as.row(tsfeatures(ts(t(experiments[i, 61448:70447]))))
+  tsfeatures_AE_spindle[i, ] <- as.row(tsfeatures(ts(t(experiments[i, 76808:85807]))))
 }
 
 # Now that the features have been computed for each of the signals, let's append them to the data set
-data_with_temporal_features <- cbind(experiments[, 1:7], RMS_smcAC, RMS_smcDC, RMS_vib_table, RMS_vib_spindle, RMS_AE_table, RMS_AE_spindle, var_smcAC, var_smcDC, var_vib_table, var_vib_spindle, var_AE_table, var_AE_spindle, max_smcAC, max_smcDC, max_vib_table, max_vib_spindle, max_AE_table, max_AE_spindle, skewness_smcAC, skewness_smcDC, skewness_vib_table, skewness_vib_spindle, skewness_AE_table, skewness_AE_spindle, kurtosis_smcAC, kurtosis_smcDC, kurtosis_vib_table, kurtosis_vib_spindle, kurtosis_AE_table, kurtosis_AE_spindle, p2p_smcAC, p2p_smcDC, p2p_vib_table, p2p_vib_spindle, p2p_AE_table, p2p_AE_spindle, sum_smcAC, sum_smcDC, sum_vib_table, sum_vib_spindle, sum_AE_table, sum_AE_spindle, min_smcAC, min_smcDC, min_vib_table, min_vib_spindle, min_AE_table, min_AE_spindle, row.names = NULL)
+data_with_temporal_features <- cbind(experiments[, 1:7], RMS_smcAC, RMS_smcDC, RMS_vib_table, RMS_vib_spindle, RMS_AE_table, RMS_AE_spindle, var_smcAC, var_smcDC, var_vib_table, var_vib_spindle, var_AE_table, var_AE_spindle, max_smcAC, max_smcDC, max_vib_table, max_vib_spindle, max_AE_table, max_AE_spindle, skewness_smcAC, skewness_smcDC, skewness_vib_table, skewness_vib_spindle, skewness_AE_table, skewness_AE_spindle, kurtosis_smcAC, kurtosis_smcDC, kurtosis_vib_table, kurtosis_vib_spindle, kurtosis_AE_table, kurtosis_AE_spindle, p2p_smcAC, p2p_smcDC, p2p_vib_table, p2p_vib_spindle, p2p_AE_table, p2p_AE_spindle, sum_smcAC, sum_smcDC, sum_vib_table, sum_vib_spindle, sum_AE_table, sum_AE_spindle, min_smcAC, min_smcDC, min_vib_table, min_vib_spindle, min_AE_table, min_AE_spindle, tsfeatures_smcAC, tsfeatures_smcDC, tsfeatures_vib_table, tsfeatures_vib_spindle, tsfeatures_AE_table, tsfeatures_AE_spindle, row.names = NULL)
 # Runs that do not have a corresponding VB value are discarded from the VB modelling phase.
 data_with_temporal_features <- na.omit(data_with_temporal_features)
 
 # What correlations are there between the 37 features?
 ggcorrplot::ggcorrplot(cor(data_with_temporal_features), hc.order = TRUE)
-## Temporal features are often perfectly correlated.
+## Temporal features are often perfectly correlated. For example:
+plot_RMS_smcAC <- ggplot(data = data_with_temporal_features[data_with_temporal_features$case == 10, ], mapping = aes(time, RMS_smcAC)) + geom_point(color = "blue")
+plot_var_smcAC <- ggplot(data = data_with_temporal_features[data_with_temporal_features$case == 10, ], mapping = aes(time, var_smcAC)) + geom_point(color = "blue")
+plot_max_smcAC <- ggplot(data = data_with_temporal_features[data_with_temporal_features$case == 10, ], mapping = aes(time, max_smcAC)) + geom_point(color = "blue")
+plot_skewness_smcAC <- ggplot(data = data_with_temporal_features[data_with_temporal_features$case == 10, ], mapping = aes(time, skewness_smcAC)) + geom_point(color = "blue")
+plot_kurtosis_smcAC <- ggplot(data = data_with_temporal_features[data_with_temporal_features$case == 10, ], mapping = aes(time, kurtosis_smcAC)) + geom_point(color = "blue")
+plot_p2p_smcAC <- ggplot(data = data_with_temporal_features[data_with_temporal_features$case == 10, ], mapping = aes(time, p2p_smcAC)) + geom_point(color = "blue")
+plot_VB_case_10 <- ggplot(data = data_with_temporal_features[data_with_temporal_features$case == 10, ], mapping = aes(time, VB)) + geom_point(color = "red")
+ggarrange(plot_RMS_smcAC, plot_var_smcAC, plot_max_smcAC, plot_skewness_smcAC, plot_kurtosis_smcAC, plot_p2p_smcAC, plot_VB_case_10)
 ## Now, what variables have the greatest influence on VB?
 cor(data_with_temporal_features[-3], data_with_temporal_features$VB)
-## x, y, z
+## time, run, ...
+
+# Let's perform PCA on the scaled data
+pca <- princomp(data_scaled[, 4:ncol(data_scaled)])
+plot(cumsum(pca$sdev^2 / sum(pca$sdev^2)), type="b") 
+plot(pca$sdev^2)
 
 # DOC, feed and material are categorical variables. Let's code them in 0s and 1s.
 data_with_TF_coded <- data_with_temporal_features
@@ -528,44 +562,67 @@ for (i in 2:ncol(data_scaled)) {
 test_scaled <- data_scaled[data_scaled$case == 12 | data_scaled$case == 15 | data_scaled$case == 11 | data_scaled$case == 16, ]
 train_scaled <- data_scaled[!(data_scaled$case == 12  | data_scaled$case == 15 | data_scaled$case == 11 | data_scaled$case == 16), ]
 
-# Model 1: VB = b0 + b1*x + b2*y + b3*z + b4*d + epsilon
+# Model 1: VB = b0 + b1*run + b2*max_AE_spindle + b3*skewness_vib_spindle + b4*material + epsilon
 LR_1 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
                      data = train_scaled)
 summary(LR_1)
 
-## Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
-LR_1_results <- data.frame(time = test_scaled$time, case = test_scaled$case, actual = test_scaled$VB, predicted = predict(LR_1, test_scaled))
+LR_1_bis <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + 
+                 material + diff1_acf10_AE_spindle + trend_AE_table, data = train_scaled)
+summary(LR_1_bis)
+
+## Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16 (with 95% prediction intervals)
+real_time <- test_scaled$time * (max(data_with_TF_coded$time) - min(data_with_TF_coded$time)) + min(data_with_TF_coded$time)
+real_run <- test_scaled$run * (max(data_with_TF_coded$run) - min(data_with_TF_coded$run)) + min(data_with_TF_coded$run)
+real_predictions <- predict(LR_1, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
+real_VB <- test_scaled$VB * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
+LR_1_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions[, 1], lbound = real_predictions[, 2], ubound = real_predictions[, 3])
 plot(LR_1_results$actual, LR_1_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites')
+     main = 'VB observÃ©es vs. VB prÃ©dites')
 abline(0, 1, lwd = 2)
+ggplot(data=LR_1_results_train[LR_1_results_train$case == 1, ], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results_train[LR_1_results_train$case == 1, ], aes(x = time, y = predicted)) + geom_hline(yintercept = VB_k)
+
+real_predictions_bis <- predict(LR_1_bis, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
+LR_1_bis_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_bis[, 1], lbound = real_predictions_bis[, 2], ubound = real_predictions_bis[, 3])
+plot(LR_1_bis_results$actual, LR_1_bis_results$predicted, col = "red", 
+     main = 'VB observÃ©es vs. VB prÃ©dites')
+abline(0, 1, lwd = 2)
+RMSE_LR_1_bis_test <- rmse(actual = LR_1_bis_results$actual, predicted = LR_1_bis_results$predicted)
+
 
 ## Let's compute model 1's RMSE, MAE and average accuracy in cases 11, 12, 15 and 16
-RMSE_LR_1_exp_11 <- rmse(actual = test_scaled[test_scaled$case == 11, "VB"], predicted = LR_1_results[LR_1_results$case == 11, ]$predicted)
-RMSE_LR_1_exp_12 <- rmse(actual = test_scaled[test_scaled$case == 12, "VB"], predicted = LR_1_results[LR_1_results$case == 12, ]$predicted)
-RMSE_LR_1_exp_15 <- rmse(actual = test_scaled[test_scaled$case == 15, "VB"], predicted = LR_1_results[LR_1_results$case == 15, ]$predicted)
-RMSE_LR_1_exp_16 <- rmse(actual = test_scaled[test_scaled$case == 16, "VB"], predicted = LR_1_results[LR_1_results$case == 16, ]$predicted)
-RMSE_LR_1_test <- rmse(actual = test_scaled$VB, predicted = LR_1_results$predicted)
-MAE_LR_1_exp_11 <- mae(actual = test_scaled[test_scaled$case == 11, "VB"], predicted = LR_1_results[LR_1_results$case == 11, ]$predicted)
-MAE_LR_1_exp_12 <- mae(actual = test_scaled[test_scaled$case == 12, "VB"], predicted = LR_1_results[LR_1_results$case == 12, ]$predicted)
-MAE_LR_1_exp_15 <- mae(actual = test_scaled[test_scaled$case == 15, "VB"], predicted = LR_1_results[LR_1_results$case == 15, ]$predicted)
-MAE_LR_1_exp_16 <- mae(actual = test_scaled[test_scaled$case == 16, "VB"], predicted = LR_1_results[LR_1_results$case == 16, ]$predicted)
-MAE_LR_1_test <- mae(actual = test_scaled$VB, predicted = LR_1_results$predicted)
-avg_accuracy_LR_1_exp_11 <- MAE_LR_1_exp_11 / mean(test_scaled[test_scaled$case == 11, "VB"])
-avg_accuracy_LR_1_exp_12 <- MAE_LR_1_exp_12 / mean(test_scaled[test_scaled$case == 12, "VB"])
-avg_accuracy_LR_1_exp_15 <- MAE_LR_1_exp_15 / mean(test_scaled[test_scaled$case == 15, "VB"])
-avg_accuracy_LR_1_exp_16 <- MAE_LR_1_exp_16 / mean(test_scaled[test_scaled$case == 16, "VB"])
-avg_accuracy_LR_1_test <- MAE_LR_1_test / mean(test_scaled$VB)
+RMSE_LR_1_exp_11 <- rmse(actual = LR_1_results[LR_1_results$case == 11, "actual"], predicted = LR_1_results[LR_1_results$case == 11, "predicted"])
+RMSE_LR_1_exp_12 <- rmse(actual = LR_1_results[LR_1_results$case == 12, "actual"], predicted = LR_1_results[LR_1_results$case == 12, ]$predicted)
+RMSE_LR_1_exp_15 <- rmse(actual = LR_1_results[LR_1_results$case == 15, "actual"], predicted = LR_1_results[LR_1_results$case == 15, ]$predicted)
+RMSE_LR_1_exp_16 <- rmse(actual = LR_1_results[LR_1_results$case == 16, "actual"], predicted = LR_1_results[LR_1_results$case == 16, ]$predicted)
+RMSE_LR_1_test <- rmse(actual = LR_1_results$actual, predicted = LR_1_results$predicted)
+MAE_LR_1_exp_11 <- mae(actual = LR_1_results[LR_1_results$case == 11, "actual"], predicted = LR_1_results[LR_1_results$case == 11, ]$predicted)
+MAE_LR_1_exp_12 <- mae(actual = LR_1_results[LR_1_results$case == 12, "actual"], predicted = LR_1_results[LR_1_results$case == 12, ]$predicted)
+MAE_LR_1_exp_15 <- mae(actual = LR_1_results[LR_1_results$case == 15, "actual"], predicted = LR_1_results[LR_1_results$case == 15, ]$predicted)
+MAE_LR_1_exp_16 <- mae(actual = LR_1_results[LR_1_results$case == 16, "actual"], predicted = LR_1_results[LR_1_results$case == 16, ]$predicted)
+MAE_LR_1_test <- mae(actual = LR_1_results$actual, predicted = LR_1_results$predicted)
+avg_accuracy_LR_1_exp_11 <- MAE_LR_1_exp_11 / mean(LR_1_results[LR_1_results$case == 11, "actual"])
+avg_accuracy_LR_1_exp_12 <- MAE_LR_1_exp_12 / mean(LR_1_results[LR_1_results$case == 12, "actual"])
+avg_accuracy_LR_1_exp_15 <- MAE_LR_1_exp_15 / mean(LR_1_results[LR_1_results$case == 15, "actual"])
+avg_accuracy_LR_1_exp_16 <- MAE_LR_1_exp_16 / mean(LR_1_results[LR_1_results$case == 16, "actual"])
+avg_accuracy_LR_1_test <- MAE_LR_1_test / mean(LR_1_results$actual)
 
 ## Let's compare the actual to the predicted increase in flank wear in cases 11, 12, 15 and 16
-plot_exp_15 <- ggplot(data=test_scaled[test_scaled$case == 15,], mapping=aes(x=time, y=VB)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 15, ], aes(x = time, y = predicted))
-plot_exp_12 <- ggplot(data=test_scaled[test_scaled$case == 12,], mapping=aes(x=time, y=VB)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 12, ], aes(x = time, y = predicted))
-plot_exp_11 <- ggplot(data=test_scaled[test_scaled$case == 11,], mapping=aes(x=time, y=VB)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 11, ], aes(x = time, y = predicted))
-plot_exp_16 <- ggplot(data=test_scaled[test_scaled$case == 16,], mapping=aes(x=time, y=VB)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 16, ], aes(x = time, y = predicted))
+plot_exp_15 <- ggplot(data=LR_1_results[LR_1_results$case == 15,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 15, ], aes(x = time, y = predicted)) + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 15, ], aes(x = time, y = lbound), linetype = "dashed") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 15, ], aes(x = time, y = ubound), linetype = "dashed") + annotate("text", x = min(LR_1_results[LR_1_results$case == 15, ]$time), y = VB_k + 0.1, label = "Usure limite") + geom_hline(yintercept = VB_k)
+plot_exp_12 <- ggplot(data=LR_1_results[LR_1_results$case == 12,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 12, ], aes(x = time, y = predicted)) + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 12, ], aes(x = time, y = lbound), linetype = "dashed") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 12, ], aes(x = time, y = ubound), linetype = "dashed") + geom_hline(yintercept = VB_k)
+plot_exp_11 <- ggplot(data=LR_1_results[LR_1_results$case == 11,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 11, ], aes(x = time, y = predicted)) + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 11, ], aes(x = time, y = lbound), linetype = "dashed") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 11, ], aes(x = time, y = ubound), linetype = "dashed") + geom_hline(yintercept = VB_k)
+plot_exp_16 <- ggplot(data=LR_1_results[LR_1_results$case == 16,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 16, ], aes(x = time, y = predicted)) + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 16, ], aes(x = time, y = lbound), linetype = "dashed") + geom_line(color = "red", data = LR_1_results[LR_1_results$case == 16, ], aes(x = time, y = ubound), linetype = "dashed") + geom_hline(yintercept = VB_k)
 ggarrange(plot_exp_11, plot_exp_12, plot_exp_15, plot_exp_16)
 
 ## an additional check: model 1's RMSE, MAE and average accuracy in the training set
-LR_1_results_train <- data.frame(time = train_scaled$time, case = train_scaled$case, actual = train_scaled$VB, predicted = predict(LR_1, train_scaled))
-RMSE_LR_1_train <- rmse(actual = train_scaled$VB, predicted = LR_1_results_train$predicted)
+real_train_predictions <- predict(LR_1, train_scaled) * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
+real_train_time <- train_scaled$time * (max(data_with_TF_coded$time) - min(data_with_TF_coded$time)) + min(data_with_TF_coded$time)
+real_train_VB <- train_scaled$VB * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
+LR_1_results_train <- data.frame(time = real_train_time, case = train_scaled$case, actual = real_train_VB, predicted = real_train_predictions)
+RMSE_LR_1_train <- rmse(actual = LR_1_results_train$actual, predicted = LR_1_results_train$predicted)
+
+## 
+
 
 # Model 2: with temporal features and process information
 LR_2 <- lm(formula = VB ~ DOC + feed + material + RMS_smcAC + RMS_smcDC + RMS_vib_table + RMS_vib_spindle + RMS_AE_table + RMS_AE_spindle + var_smcAC + var_smcDC + var_vib_table + var_vib_spindle + var_AE_table + var_AE_spindle + max_smcAC + max_smcDC + max_vib_table + max_vib_spindle + max_AE_table + max_AE_spindle + skewness_smcAC + skewness_smcDC + skewness_vib_table + skewness_vib_spindle + skewness_AE_table + skewness_AE_spindle + kurtosis_smcAC + kurtosis_smcDC + kurtosis_vib_table + kurtosis_vib_spindle + kurtosis_AE_table + kurtosis_AE_spindle,
@@ -593,6 +650,7 @@ LR_7 <- lm(formula = VB ~ time,
 summary(LR_7)
 
 ####################################################### NEURAL NETWORKS FOR VB REGRESSION #########################################
+set.seed(1234)
 # Feedforward, fully connected NN (32 x 8 hidden units) for VB regression
 NN_1 <- neuralnet(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
                   data = train_scaled, hidden = c(32, 8), threshold = 0.01, linear.output = TRUE, act.fct = "tanh")
@@ -615,7 +673,7 @@ RMSE_NN_1_test <- sqrt(MSE.nn_1)
 
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test_scaled$VB, nn.results$net.result, col = "red", 
-     main = 'VB observées vs. VB prédites')
+     main = 'VB observÃ©es vs. VB prÃ©dites')
 abline(0, 1, lwd = 2)
 
 # A second feedforward, fully connected NN (3 hidden units) for VB regression
@@ -634,7 +692,7 @@ RMSE_NN_2_test <- sqrt(MSE.nn_2)
 
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test_scaled$VB, nn.results_2$net.result, col = "red", 
-     main = 'VB observées vs. VB prédites par NN_2')
+     main = 'VB observÃ©es vs. VB prÃ©dites par NN_2')
 abline(0, 1, lwd = 2)
 
 # A third feedforward, fully connected NN (2 hidden units) for VB regression
@@ -654,7 +712,7 @@ RMSE_NN_3_test <- sqrt(MSE.nn_3)
 #MSE.nn <- sum((test_scaled[,"VB"] - nn.results$net.result)^2) / nrow(test_scaled)
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test_scaled$VB, nn.results_3$net.result, col = "red", 
-     main = 'VB observées vs. VB prédites par NN_3')
+     main = 'VB observÃ©es vs. VB prÃ©dites par NN_3')
 abline(0, 1, lwd = 2)
 
 # Let's take a closer look at each test experiment
@@ -694,6 +752,63 @@ ggarrange(plot_NN_exp_11, plot_NN_exp_12, plot_NN_exp_15, plot_NN_exp_16)
 RMSE_NN_1_exp_16 <- rmse(actual = results_with_time_and_case[results_with_time_and_case$case == 16, ]$actual, predicted = results_with_time_and_case[results_with_time_and_case$case == 16, ]$prediction_NN1)
 RMSE_NN_2_exp_16 <- rmse(actual = results_with_time_and_case[results_with_time_and_case$case == 16, ]$actual, predicted = results_with_time_and_case[results_with_time_and_case$case == 16, ]$prediction_NN2)
 RMSE_NN_3_exp_16 <- rmse(actual = results_with_time_and_case[results_with_time_and_case$case == 16, ]$actual, predicted = results_with_time_and_case[results_with_time_and_case$case == 16, ]$prediction_NN3)
+
+### SUPPORT VECTOR REGRESSION FOR VB ###
+SVM_1 <- svm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
+             data = train_scaled)
+real_predictions_SVM_1 <- predict(SVM_1, test_scaled) * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
+SVM_1_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_SVM_1)
+
+# Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
+plot(SVM_1_results$actual, SVM_1_results$predicted, col = "red", 
+     main = 'VB observÃ©es vs. VB prÃ©dites par SVM_1')
+abline(0, 1, lwd = 2)
+
+## Let's compute SVM_1's RMSE, MAE and average accuracy in cases 11, 12, 15 and 16
+RMSE_SVM_1_exp_11 <- rmse(actual = SVM_1_results[SVM_1_results$case == 11, "actual"], predicted = SVM_1_results[SVM_1_results$case == 11, "predicted"])
+RMSE_SVM_1_exp_12 <- rmse(actual = SVM_1_results[SVM_1_results$case == 12, "actual"], predicted = SVM_1_results[SVM_1_results$case == 12, "predicted"])
+RMSE_SVM_1_exp_15 <- rmse(actual = SVM_1_results[SVM_1_results$case == 15, "actual"], predicted = SVM_1_results[SVM_1_results$case == 15, "predicted"])
+RMSE_SVM_1_exp_16 <- rmse(actual = SVM_1_results[SVM_1_results$case == 16, "actual"], predicted = SVM_1_results[SVM_1_results$case == 16, "predicted"])
+RMSE_SVM_1_test <- rmse(actual = SVM_1_results$actual, predicted = SVM_1_results$predicted)
+MAE_SVM_1_exp_11 <- rmse(actual = SVM_1_results[SVM_1_results$case == 11, "actual"], predicted = SVM_1_results[SVM_1_results$case == 11, "predicted"])
+MAE_SVM_1_exp_12 <- rmse(actual = SVM_1_results[SVM_1_results$case == 12, "actual"], predicted = SVM_1_results[SVM_1_results$case == 12, "predicted"])
+MAE_SVM_1_exp_15 <- rmse(actual = SVM_1_results[SVM_1_results$case == 15, "actual"], predicted = SVM_1_results[SVM_1_results$case == 15, "predicted"])
+MAE_SVM_1_exp_16 <- rmse(actual = SVM_1_results[SVM_1_results$case == 16, "actual"], predicted = SVM_1_results[SVM_1_results$case == 16, "predicted"])
+MAE_SVM_1_test <- mae(actual = SVM_1_results$actual, predicted = SVM_1_results$predicted)
+avg_accuracy_SVM_1_exp_11 <- MAE_SVM_1_exp_11 / mean(SVM_1_results[SVM_1_results$case == 11, "actual"])
+avg_accuracy_SVM_1_exp_12 <- MAE_SVM_1_exp_12 / mean(SVM_1_results[SVM_1_results$case == 12, "actual"])
+avg_accuracy_SVM_1_exp_15 <- MAE_SVM_1_exp_15 / mean(SVM_1_results[SVM_1_results$case == 15, "actual"])
+avg_accuracy_SVM_1_exp_16 <- MAE_SVM_1_exp_16 / mean(SVM_1_results[SVM_1_results$case == 16, "actual"])
+avg_accuracy_SVM_1_test <- MAE_SVM_1_test / mean(SVM_1_results$actual)
+
+## Let's compare the actual to the predicted increase in flank wear in cases 11, 12, 15 and 16
+plot_exp_15 <- ggplot(data=SVM_1_results[SVM_1_results$case == 15,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = SVM_1_results[SVM_1_results$case == 15, ], aes(x = time, y = predicted)) + geom_hline(yintercept = VB_k)
+plot_exp_12 <- ggplot(data=SVM_1_results[SVM_1_results$case == 12,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = SVM_1_results[SVM_1_results$case == 12, ], aes(x = time, y = predicted)) + geom_hline(yintercept = VB_k)
+plot_exp_11 <- ggplot(data=SVM_1_results[SVM_1_results$case == 11,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = SVM_1_results[SVM_1_results$case == 11, ], aes(x = time, y = predicted)) + geom_hline(yintercept = VB_k)
+plot_exp_16 <- ggplot(data=SVM_1_results[SVM_1_results$case == 16,], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = SVM_1_results[SVM_1_results$case == 16, ], aes(x = time, y = predicted)) + geom_hline(yintercept = VB_k)
+ggarrange(plot_exp_11, plot_exp_12, plot_exp_15, plot_exp_16)
+
+## an additional check: SVM_1's RMSE, MAE and average accuracy in the training set
+SVM_1_results_train <- data.frame(time = train_scaled$time, case = train_scaled$case, actual = train_scaled$VB, predicted = predict(SVM_1, train_scaled))
+RMSE_SVM_1_train <- rmse(actual = train_scaled$VB, predicted = SVM_1_results_train$predicted)
+
+# perform a grid search 
+# (this might take a few seconds, adjust how fine of grid if taking too long)
+tuneResult1 <- tune(svm, VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
+                    data = train_scaled,
+                    ranges = list(epsilon = seq(0,1,0.1), cost = 2^(seq(0.5,8,.5)))
+)
+
+# Map tuning results
+plot(tuneResult1)
+print(tuneResult1)
+## Best parameters: epsilon = 0, cost = 2.828427
+
+SVM_2 <- tuneResult1$best.model
+real_predictions_SVM_2 <- predict(SVM_2, test_scaled) * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
+SVM_2_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_SVM_2)
+
+
 
 # Let's plot smcAC sensor data for the first run of experiment 2
 #smcAC_run_1 <- c(experiments_2_10[1, 8:9007])
