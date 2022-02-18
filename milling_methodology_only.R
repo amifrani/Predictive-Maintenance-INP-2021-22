@@ -258,36 +258,36 @@ train_scaled <- data_scaled[!(data_scaled$case == 12  | data_scaled$case == 15 |
 # Model 1: VB = b0 + b1*run + b2*max_AE_spindle + b3*skewness_vib_spindle + b4*material + epsilon
 LR_1 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material,
                      data = train_scaled)
-summary(LR_1) # 100 DF, multiple R² = 0.6571, adjusted R² = 0.6434
+summary(LR_1) # 100 DF, multiple RÂ² = 0.6571, adjusted RÂ² = 0.6434
 
 LR_2 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + 
                  material + diff1_acf10_AE_spindle, data = train_scaled)
-summary(LR_2) # 99 DF, multiple R² = 0.6874, adjusted R² = 0.6716
+summary(LR_2) # 99 DF, multiple RÂ² = 0.6874, adjusted RÂ² = 0.6716
 
 LR_3 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material + e_acf1_AE_table + trend_AE_table, 
            data = train_scaled)
 
-summary(LR_3) # 98 DF, multiple R² = 0.6607, adjusted R² = 0.64
+summary(LR_3) # 98 DF, multiple RÂ² = 0.6607, adjusted RÂ² = 0.64
 
 LR_4 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material + e_acf1_AE_table, 
            data = train_scaled)
 
-summary(LR_4) # 99 DF, multiple R² = 0.6602, adjusted R² = 0.6431
+summary(LR_4) # 99 DF, multiple RÂ² = 0.6602, adjusted RÂ² = 0.6431
 
 LR_5 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + material + diff1_acf10_AE_spindle + trend_AE_table, 
            data = train_scaled)
 
-summary(LR_5) # 98 DF, multiple R² = 0.6874, adjusted R² = 0.6683
+summary(LR_5) # 98 DF, multiple RÂ² = 0.6874, adjusted RÂ² = 0.6683
 
 LR_6 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + diff1_acf10_AE_spindle, 
            data = train_scaled)
 
-summary(LR_6) # 100 DF, multiple R² = 0.6704, adjusted R² = 0.6572
+summary(LR_6) # 100 DF, multiple RÂ² = 0.6704, adjusted RÂ² = 0.6572
 
 LR_7 <- lm(formula = VB ~ run + max_AE_spindle + skewness_vib_spindle + diff1_acf10_AE_spindle + entropy_smcAC + material, 
            data = train_scaled)
 
-summary(LR_7) # 98 DF, multiple R² = 0.7039, adjusted R² = 0.6858
+summary(LR_7) # 98 DF, multiple RÂ² = 0.7039, adjusted RÂ² = 0.6858
 
 LR_3 <- lm(formula = VB ~ time + max_AE_spindle + skewness_vib_spindle + material,
            data = train_scaled)
@@ -302,7 +302,7 @@ real_predictions <- predict(LR_1, test_scaled, interval = "predict") * (max(data
 real_VB <- test_scaled$VB * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
 LR_1_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions[, 1], lbound = real_predictions[, 2], ubound = real_predictions[, 3])
 plot(LR_1_results$actual, LR_1_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites')
+     main = 'VB observÃ©es vs. VB prÃ©dites')
 abline(0, 1, lwd = 2)
 ggplot(data=LR_1_results_train[LR_1_results_train$case == 1, ], mapping=aes(x=time, y=actual)) + geom_point(color = "blue") + geom_line(color = "red", data = LR_1_results_train[LR_1_results_train$case == 1, ], aes(x = time, y = predicted)) + geom_hline(yintercept = VB_k)
 rsquared_LR_1_test <- 1 - sum((LR_1_results$actual - LR_1_results$predicted)^2) / (sum((LR_1_results$predicted - mean(LR_1_results$actual))^2) + sum((LR_1_results$actual - LR_1_results$predicted)^2))
@@ -311,7 +311,7 @@ adjusted_rsquared_LR_1_test <- 1 - (1 - rsquared_LR_1_test)*(length(LR_1_results
 real_predictions_2 <- predict(LR_2, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
 LR_2_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_2[, 1], lbound = real_predictions_2[, 2], ubound = real_predictions_2[, 3])
 plot(LR_2_results$actual, LR_2_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites')
+     main = 'VB observÃ©es vs. VB prÃ©dites')
 abline(0, 1, lwd = 2)
 RMSE_LR_2_test <- rmse(actual = LR_2_results$actual, predicted = LR_2_results$predicted)
 MAE_LR_2_test <- mae(actual = LR_2_results$actual, predicted = LR_2_results$predicted)
@@ -321,35 +321,35 @@ adjusted_rsquared_LR_2_test <- 1 - (1 - rsquared_LR_2_test)*(length(LR_2_results
 real_predictions_3 <- predict(LR_3, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
 LR_3_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_3[, 1], lbound = real_predictions_3[, 2], ubound = real_predictions_3[, 3])
 plot(LR_3_results$actual, LR_3_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites par LR_3')
+     main = 'VB observÃ©es vs. VB prÃ©dites par LR_3')
 abline(0, 1, lwd = 2)
 RMSE_LR_3_test <- rmse(actual = LR_3_results$actual, predicted = LR_3_results$predicted)
 
 real_predictions_4 <- predict(LR_4, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
 LR_4_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_4[, 1], lbound = real_predictions_4[, 2], ubound = real_predictions_4[, 3])
 plot(LR_4_results$actual, LR_4_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites par LR_4')
+     main = 'VB observÃ©es vs. VB prÃ©dites par LR_4')
 abline(0, 1, lwd = 2)
 RMSE_LR_4_test <- rmse(actual = LR_4_results$actual, predicted = LR_4_results$predicted)
 
 real_predictions_5 <- predict(LR_5, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
 LR_5_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_5[, 1], lbound = real_predictions_5[, 2], ubound = real_predictions_5[, 3])
 plot(LR_5_results$actual, LR_5_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites par LR_5')
+     main = 'VB observÃ©es vs. VB prÃ©dites par LR_5')
 abline(0, 1, lwd = 2)
 RMSE_LR_5_test <- rmse(actual = LR_5_results$actual, predicted = LR_5_results$predicted)
 
 real_predictions_6 <- predict(LR_6, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
 LR_6_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_6[, 1], lbound = real_predictions_6[, 2], ubound = real_predictions_6[, 3])
 plot(LR_6_results$actual, LR_6_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites par LR_6')
+     main = 'VB observÃ©es vs. VB prÃ©dites par LR_6')
 abline(0, 1, lwd = 2)
 RMSE_LR_6_test <- rmse(actual = LR_6_results$actual, predicted = LR_6_results$predicted)
 
 real_predictions_7 <- predict(LR_7, test_scaled, interval = "predict") * (max(data_with_TF_coded$VB) - min(data_with_TF_coded$VB)) + min(data_with_TF_coded$VB)
 LR_7_results <- data.frame(run = real_run, time = real_time, case = test_scaled$case, actual = real_VB, predicted = real_predictions_7[, 1], lbound = real_predictions_7[, 2], ubound = real_predictions_7[, 3])
 plot(LR_7_results$actual, LR_7_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites par LR_7')
+     main = 'VB observÃ©es vs. VB prÃ©dites par LR_7')
 abline(0, 1, lwd = 2)
 RMSE_LR_7_test <- rmse(actual = LR_7_results$actual, predicted = LR_7_results$predicted)
 MAE_LR_7_test <- mae(actual = LR_7_results$actual, predicted = LR_7_results$predicted)
@@ -447,7 +447,7 @@ RMSE_NN_1_test <- sqrt(MSE.nn_1)
 
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test_scaled$VB, nn.results$net.result, col = "red", 
-     main = 'VB observées vs. VB prédites')
+     main = 'VB observÃ©es vs. VB prÃ©dites')
 abline(0, 1, lwd = 2)
 
 # A second feedforward, fully connected NN (3 hidden units) for VB regression
@@ -466,7 +466,7 @@ RMSE_NN_2_test <- sqrt(MSE.nn_2)
 
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test_scaled$VB, nn.results_2$net.result, col = "red", 
-     main = 'VB observées vs. VB prédites par NN_2')
+     main = 'VB observÃ©es vs. VB prÃ©dites par NN_2')
 abline(0, 1, lwd = 2)
 
 # A third feedforward, fully connected NN (2 hidden units) for VB regression
@@ -486,7 +486,7 @@ RMSE_NN_3_test <- sqrt(MSE.nn_3)
 #MSE.nn <- sum((test_scaled[,"VB"] - nn.results$net.result)^2) / nrow(test_scaled)
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(test.r, pr.nn_3, col = "red", 
-     main = 'VB observées vs. VB prédites par NN_3', xlab="Valeurs observées de VB (mm)", ylab="Valeurs prédites de VB (mm)")
+     main = 'VB observÃ©es vs. VB prÃ©dites par NN_3', xlab="Valeurs observÃ©es de VB (mm)", ylab="Valeurs prÃ©dites de VB (mm)")
 abline(0, 1, lwd = 2)
 
 # Let's take a closer look at each test experiment
@@ -550,7 +550,7 @@ SVM_1_results <- data.frame(run = real_run, time = real_time, case = test_scaled
 
 # Let's plot predicted vs. actual VB values for cases 11, 12, 15 and 16
 plot(SVM_1_results$actual, SVM_1_results$predicted, col = "red", 
-     main = 'VB observées vs. VB prédites par SVM_1')
+     main = 'VB observÃ©es vs. VB prÃ©dites par SVM_1')
 abline(0, 1, lwd = 2)
 
 ## Let's compute SVM_1's RMSE, MAE and average accuracy in cases 11, 12, 15 and 16
